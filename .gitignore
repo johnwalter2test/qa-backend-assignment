@@ -1,8 +1,25 @@
-# Compiled class file
-*.class
+# Maven
+target/
 
-# Log file
+# Eclipse
+.classpath
+.project
+.settings/
+
+# IntelliJ / VS Code
+.idea/
+.vscode/
+*.iml
+
+# Local environment / secrets
+.env
+.env.*
+
+# Logs
 *.log
+
+# Compiled Java files
+*.class
 
 # BlueJ files
 *.ctxt
@@ -10,7 +27,7 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Java / package artifacts
 *.jar
 *.war
 *.nar
@@ -19,11 +36,6 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# JVM crash logs
 hs_err_pid*
-
-#Adds
-.vscode
-.idea
-target
-*.iml
+replay_pid*
