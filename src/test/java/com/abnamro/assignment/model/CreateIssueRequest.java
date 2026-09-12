@@ -1,5 +1,5 @@
 package com.abnamro.assignment.model;
 
 /** Represents an issue creation request. */
-public class CreateIssueRequest {
+public record CreateIssueRequest(String title, String description) {
 }
