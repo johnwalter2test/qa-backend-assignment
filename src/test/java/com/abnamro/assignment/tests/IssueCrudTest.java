@@ -3,6 +3,7 @@ package com.abnamro.assignment.tests;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import com.abnamro.assignment.assertions.IssueAssertions;
 import com.abnamro.assignment.model.CreateIssueRequest;
@@ -17,6 +18,8 @@ import io.restassured.response.Response;
 /**
  * Verifies CRUD behavior of the GitLab Issues API.
  */
+@Tag("issues")
+@Tag("crud")
 class IssueCrudTest {
 
 	private IssueService issueService;
@@ -34,6 +37,7 @@ class IssueCrudTest {
 	}
 
 	@Test
+	@Tag("post-create")
 	@DisplayName("Create an issue and retrieve the persisted issue")
 	void shouldCreateAndRetrieveIssue() {
 		CreateIssueRequest request = IssueTestData.validIssue();
@@ -52,6 +56,27 @@ class IssueCrudTest {
 	}
 
 	@Test
+	@Tag("get")
+	@DisplayName("Retrieve an existing issue by IID")
+	void shouldRetrieveExistingIssue() {
+		CreateIssueRequest request = IssueTestData.validIssue();
+
+		Response createResponse = issueService.createIssue(request);
+		IssueResponse createdIssue = IssueAssertions.assertSuccessfulIssueResponse(createResponse, 201);
+		cleanup.track(createdIssue.iid());
+
+		Response getResponse = issueService.getIssue(createdIssue.iid());
+		IssueResponse retrievedIssue = IssueAssertions.assertSuccessfulIssueResponse(getResponse, 200);
+
+		IssueAssertions.assertSameIdentity(retrievedIssue, createdIssue);
+		assertEquals(createdIssue.title(), retrievedIssue.title(), "Retrieved title should match created title");
+		assertEquals(createdIssue.description(), retrievedIssue.description(),
+				"Retrieved description should match created description");
+		assertEquals("opened", retrievedIssue.state(), "Retrieved issue should be opened");
+	}
+
+	@Test
+	@Tag("put-update")
 	@DisplayName("Update an existing issue and verify the changes are persisted")
 	void shouldUpdateIssue() {
 		CreateIssueRequest createRequest = IssueTestData.validIssue();
@@ -76,6 +101,7 @@ class IssueCrudTest {
 	}
 
 	@Test
+	@Tag("delete")
 	@DisplayName("Delete an existing issue and verify it can no longer be retrieved")
 	void shouldDeleteIssue() {
 

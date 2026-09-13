@@ -2,6 +2,8 @@ package com.abnamro.assignment.service;
 
 import static io.restassured.RestAssured.given;
 
+import java.util.Map;
+
 import com.abnamro.assignment.config.ApiConfig;
 import com.abnamro.assignment.config.RequestSpecFactory;
 import com.abnamro.assignment.model.CreateIssueRequest;
@@ -33,16 +35,14 @@ public final class IssueService {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when().get(ISSUE_ENDPOINT);
 	}
 
-	/**
-	 * Updates an existing issue.
-	 */
+	// Updates an existing issue.
+	
 	public Response updateIssue(long issueIid, UpdateIssueRequest request) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).body(request).when().put(ISSUE_ENDPOINT);
 	}
-
-	/**
-	 * Deletes an existing issue.
-	 */
+	
+	// Deletes an existing issue.
+	
 	public Response deleteIssue(long issueIid) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when().delete(ISSUE_ENDPOINT);
 	}
@@ -70,4 +70,7 @@ public final class IssueService {
 		return given().spec(specification).pathParam("projectId", ApiConfig.projectId());
 	}
 
+	public Response listIssues(Map<String, ?> queryParams) {
+		return authenticatedRequest().queryParams(queryParams).when().get(ISSUES_ENDPOINT);
+	}
 }

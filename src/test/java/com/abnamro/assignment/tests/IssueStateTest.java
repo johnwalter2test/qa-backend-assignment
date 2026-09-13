@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import com.abnamro.assignment.assertions.IssueAssertions;
@@ -17,6 +18,8 @@ import com.abnamro.assignment.support.IssueTestData;
 
 import io.restassured.response.Response;
 
+@Tag("issues")
+@Tag("state")
 class IssueStateTest {
 
 	private IssueService issueService;
@@ -34,6 +37,7 @@ class IssueStateTest {
 	}
 
 	@Test
+	@Tag("state transistion")
 	@DisplayName("Close and reopen an existing issue")
 	void shouldCloseAndReopenIssue() {
 		IssueResponse createdIssue = createTrackedIssue();
