@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import com.abnamro.assignment.assertions.IssueAssertions;
 import com.abnamro.assignment.model.CreateIssueRequest;
 import com.abnamro.assignment.model.IssueResponse;
+import com.abnamro.assignment.model.UpdateIssueRequest;
 import com.abnamro.assignment.service.IssueService;
 import com.abnamro.assignment.support.IssueCleanup;
 import com.abnamro.assignment.support.IssueTestData;
@@ -34,9 +35,7 @@ public class IssueEdgeCaseTest {
 	private static final int MAX_PAGE_SIZE = 100;
 
 	@Test
-	@Tag("create")
-	@Tag("read")
-	@Tag("unicode")
+	@Tag("edge")
 	@DisplayName("Preserve Unicode and special characters in issue content")
 	void shouldPreserveUnicodeIssueContent() {
 		CreateIssueRequest request = IssueTestData.unicodeIssue();
@@ -55,8 +54,7 @@ public class IssueEdgeCaseTest {
 	}
 
 	@Test
-	@Tag("create")
-	@Tag("duplicate-title")
+	@Tag("edge")
 	@DisplayName("Allow different issues to use the same title")
 	void shouldAllowDuplicateIssueTitles() {
 		String sharedTitle = IssueTestData.uniqueTitle("DUPLICATE");
@@ -73,9 +71,8 @@ public class IssueEdgeCaseTest {
 	}
 
 	@Test
-	@Tag("list")
+	@Tag("edge")
 	@Tag("pagination")
-	@Tag("extended")
 	@DisplayName("Paginate 101 issues across GitLab maximum page boundary")
 	void shouldPaginateAcrossMaximumPageBoundary() {
 		String marker = IssueTestData.uniqueTitle("PAGINATION");
@@ -103,7 +100,6 @@ public class IssueEdgeCaseTest {
 	@DisplayName("Find an issue using a unique search marker")
 	void shouldFindIssueBySearchMarker() {
 		String marker = IssueTestData.uniqueTitle("SEARCH");
-
 		IssueResponse createdIssue = createTrackedIssue(
 				IssueTestData.issue(marker, IssueTestData.uniqueDescription("SEARCH")));
 		Response response = issueService.listIssues(Map.of("search", marker));
@@ -112,6 +108,31 @@ public class IssueEdgeCaseTest {
 		List<IssueResponse> issues = Arrays.asList(response.as(IssueResponse[].class));
 		assertTrue(issues.stream().anyMatch(issue -> issue.iid() == createdIssue.iid()),
 				"Search should return the issue created by this test");
+	}
+
+	@Test
+	@Tag("edge")
+	@DisplayName("Record issue close and reopen events in state history")
+	void shouldRecordIssueStateHistory() {
+		IssueResponse issue = createTrackedIssue(IssueTestData.validIssue());
+		Response closeResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("close"));
+		IssueAssertions.assertSuccessfulIssueResponse(closeResponse, 200);
+
+		Response reopenResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("reopen"));
+		IssueAssertions.assertSuccessfulIssueResponse(reopenResponse, 200);
+
+		Response closefinalResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("close"));
+		IssueAssertions.assertSuccessfulIssueResponse(closefinalResponse, 200);
+
+		Response historyResponse = issueService.getIssueStateEvents(issue.iid());
+		assertEquals(200, historyResponse.statusCode());
+		List<String> states = historyResponse.jsonPath().getList("state", String.class);
+		assertTrue(states.contains("closed"), "State history should contain a closed event");
+		assertTrue(states.contains("opened"), "State history should contain a reopened/opened event");
+		long closedCount = states.stream().filter("closed"::equals).count();
+		long openedCount = states.stream().filter("opened"::equals).count();
+		assertEquals(2, closedCount, "State history should contain two closed events");
+		assertEquals(1, openedCount, "State history should contain one opened event");
 	}
 
 	private List<IssueResponse> getPage(String marker, int page) {

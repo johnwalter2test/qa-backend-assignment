@@ -36,13 +36,13 @@ public final class IssueService {
 	}
 
 	// Updates an existing issue.
-	
+
 	public Response updateIssue(long issueIid, UpdateIssueRequest request) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).body(request).when().put(ISSUE_ENDPOINT);
 	}
-	
+
 	// Deletes an existing issue.
-	
+
 	public Response deleteIssue(long issueIid) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when().delete(ISSUE_ENDPOINT);
 	}
@@ -72,5 +72,10 @@ public final class IssueService {
 
 	public Response listIssues(Map<String, ?> queryParams) {
 		return authenticatedRequest().queryParams(queryParams).when().get(ISSUES_ENDPOINT);
+	}
+
+	public Response getIssueStateEvents(long issueIid) {
+		return authenticatedRequest().pathParam("issueIid", issueIid).when()
+				.get(ISSUE_ENDPOINT + "/resource_state_events");
 	}
 }
