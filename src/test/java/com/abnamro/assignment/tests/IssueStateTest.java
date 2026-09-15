@@ -1,6 +1,9 @@
 package com.abnamro.assignment.tests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,33 +40,34 @@ class IssueStateTest {
 	}
 
 	@Test
-	@Tag("state transistion")
-	@DisplayName("Close and reopen an existing issue")
+	@Tag("statetransistion")
+	@DisplayName("Record issue close and reopen events in state history")
 	void shouldCloseAndReopenIssue() {
-		IssueResponse createdIssue = createTrackedIssue();
+		// state - close
+		IssueResponse issue = createTrackedIssue(IssueTestData.validIssue());
+		Response closeResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("close"));
+		assertEquals("closed", IssueAssertions.assertSuccessfulIssueResponse(closeResponse, 200).state());
+ 
+		// state - reopen
+		Response reopenResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("reopen"));
+		assertEquals("opened", IssueAssertions.assertSuccessfulIssueResponse(reopenResponse, 200).state());
+		// state - close
+		Response finalCloseResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("close"));
+		assertEquals("closed", IssueAssertions.assertSuccessfulIssueResponse(finalCloseResponse, 200).state());
 
-		Response closeResponse = issueService.updateIssue(createdIssue.iid(), UpdateIssueRequest.state("close"));
-		IssueResponse closedIssue = IssueAssertions.assertSuccessfulIssueResponse(closeResponse, 200);
-		IssueAssertions.assertSameIdentity(closedIssue, createdIssue);
-		IssueAssertions.assertState(closedIssue, "closed");
-
-		Response closedGetResponse = issueService.getIssue(createdIssue.iid());
-		IssueResponse persistedClosedIssue = IssueAssertions.assertSuccessfulIssueResponse(closedGetResponse, 200);
-		assertEquals("closed", persistedClosedIssue.state(), "Closed state should persist");
-
-		Response reopenResponse = issueService.updateIssue(createdIssue.iid(), UpdateIssueRequest.state("reopen"));
-		IssueResponse reopenedIssue = IssueAssertions.assertSuccessfulIssueResponse(reopenResponse, 200);
-		IssueAssertions.assertSameIdentity(reopenedIssue, createdIssue);
-		IssueAssertions.assertState(reopenedIssue, "opened");
-
-		Response reopenedGetResponse = issueService.getIssue(createdIssue.iid());
-		IssueResponse persistedReopenedIssue = IssueAssertions.assertSuccessfulIssueResponse(reopenedGetResponse, 200);
-		assertEquals("opened", persistedReopenedIssue.state(), "Reopened state should persist");
+		Response historyResponse = issueService.getIssueStateEvents(issue.iid());
+		assertEquals(200, historyResponse.statusCode());
+		List<String> states = historyResponse.jsonPath().getList("state", String.class);
+		assertEquals(3, states.size(), "State history should contain exactly three transitions: " + states);
+		assertTrue(states.contains("closed"), "State history should contain a closed event");
+		assertTrue(states.contains("reopened"), "State history should contain a reopened event");
+		long closedCount = states.stream().filter("closed"::equals).count();
+		long reopenedCount = states.stream().filter("reopened"::equals).count();
+		assertEquals(2, closedCount, "State history should contain two closed events");
+		assertEquals(1, reopenedCount, "State history should contain one reopened event");
 	}
 
-	private IssueResponse createTrackedIssue() {
-		CreateIssueRequest request = IssueTestData.validIssue();
-
+	private IssueResponse createTrackedIssue(CreateIssueRequest request) {
 		Response response = issueService.createIssue(request);
 
 		IssueResponse issue = IssueAssertions.assertSuccessfulIssueResponse(response, 201);

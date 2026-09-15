@@ -35,6 +35,7 @@ class IssueNegativeTest {
 		Response createResponse = issueService.createIssue(request);
 
 		IssueResponse createdIssue = IssueAssertions.assertSuccessfulIssueResponse(createResponse, 201);
+		cleanup.track(createdIssue.iid());
 		Response deleteResponse = issueService.deleteIssue(createdIssue.iid());
 		assertEquals(204, deleteResponse.statusCode(), "Issue should be deleted successfully");
 
@@ -49,8 +50,10 @@ class IssueNegativeTest {
 		CreateIssueRequest request = IssueTestData.issueWithoutTitle();
 
 		Response response = issueService.createIssue(request);
+		System.out.println("Status: " + response.statusCode());
+		System.out.println("Body: " + response.asPrettyString());
 		assertEquals(400, response.statusCode(), "Issue without title should be rejected");
-		assertNotNull(response.jsonPath().get("message"), "Validation error should contain a message");
+		assertEquals("title is missing", response.jsonPath().getString("error"));
 	}
 
 	@Test

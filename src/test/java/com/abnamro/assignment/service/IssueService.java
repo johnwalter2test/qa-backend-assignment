@@ -78,4 +78,24 @@ public final class IssueService {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when()
 				.get(ISSUE_ENDPOINT + "/resource_state_events");
 	}
+
+	public Response setTimeEstimate(long iid, String duration) {
+		return authenticatedRequest().pathParam("issueIid", iid).queryParam("duration", duration).when()
+				.post(ISSUES_ENDPOINT + "/{issueIid}/time_estimate");
+	}
+
+	public Response addSpentTime(long issueIid, String duration) {
+		return authenticatedRequest().pathParam("issueIid", issueIid).queryParam("duration", duration).when()
+				.post(ISSUES_ENDPOINT + "/{issueIid}/add_spent_time");
+	}
+
+	public Response resetSpentTime(long issueIid) {
+		return authenticatedRequest().pathParam("issueIid", issueIid).when()
+				.post(ISSUES_ENDPOINT + "/{issueIid}/reset_spent_time");
+	}
+
+	public Response getTimeStats(long issueIid) {
+		return authenticatedRequest().pathParam("issueIid", issueIid).when()
+				.get(ISSUES_ENDPOINT + "/{issueIid}/time_stats");
+	}
 }

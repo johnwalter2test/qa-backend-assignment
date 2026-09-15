@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import com.abnamro.assignment.assertions.IssueAssertions;
 import com.abnamro.assignment.model.CreateIssueRequest;
 import com.abnamro.assignment.model.IssueResponse;
+import com.abnamro.assignment.model.TimeStatsResponse;
 import com.abnamro.assignment.model.UpdateIssueRequest;
 import com.abnamro.assignment.service.IssueService;
 import com.abnamro.assignment.support.IssueCleanup;
@@ -111,28 +113,70 @@ public class IssueEdgeCaseTest {
 	}
 
 	@Test
-	@Tag("edge")
-	@DisplayName("Record issue close and reopen events in state history")
-	void shouldRecordIssueStateHistory() {
-		IssueResponse issue = createTrackedIssue(IssueTestData.validIssue());
-		Response closeResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("close"));
-		IssueAssertions.assertSuccessfulIssueResponse(closeResponse, 200);
+	@Tag("time-tracking")
+	@DisplayName("Track and reset time for an issue")
+	void shouldTrackAndResetIssueTime() {
 
-		Response reopenResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("reopen"));
-		IssueAssertions.assertSuccessfulIssueResponse(reopenResponse, 200);
+		String title = IssueTestData.uniqueTitle("TimeTracking");
+		CreateIssueRequest request = IssueTestData.issue(title, "Time tracking test");
 
-		Response closefinalResponse = issueService.updateIssue(issue.iid(), UpdateIssueRequest.state("close"));
-		IssueAssertions.assertSuccessfulIssueResponse(closefinalResponse, 200);
+		// Create issue
+		Response createdIssueResponse = issueService.createIssue(request);
+		assertEquals(201, createdIssueResponse.statusCode(), "Issue creation failed");
+		IssueResponse createdIssue = createdIssueResponse.as(IssueResponse.class);
 
-		Response historyResponse = issueService.getIssueStateEvents(issue.iid());
-		assertEquals(200, historyResponse.statusCode());
-		List<String> states = historyResponse.jsonPath().getList("state", String.class);
-		assertTrue(states.contains("closed"), "State history should contain a closed event");
-		assertTrue(states.contains("opened"), "State history should contain a reopened/opened event");
-		long closedCount = states.stream().filter("closed"::equals).count();
-		long openedCount = states.stream().filter("opened"::equals).count();
-		assertEquals(2, closedCount, "State history should contain two closed events");
-		assertEquals(1, openedCount, "State history should contain one opened event");
+		long iid = createdIssue.iid();
+		cleanup.track(iid);
+
+		// Set estimate = 2h
+		Response estimateResponse = issueService.setTimeEstimate(iid, "2h");
+		assertEquals(200, estimateResponse.statusCode(), "Setting time estimate failed");
+		TimeStatsResponse estimate = estimateResponse.as(TimeStatsResponse.class);
+		assertEquals(7200, estimate.timeEstimate());
+
+		// Add spent time = 30m
+		Response spentTimeResponse = issueService.addSpentTime(iid, "30m");
+		assertEquals(201, spentTimeResponse.statusCode(), "Adding spent time failed");
+		TimeStatsResponse spentTime = spentTimeResponse.as(TimeStatsResponse.class);
+		assertEquals(1800, spentTime.totalTimeSpent());
+
+		// Get time stats
+		Response timeStatsResponse = issueService.getTimeStats(iid);
+		assertEquals(200, timeStatsResponse.statusCode(), "Getting time stats failed");
+		TimeStatsResponse timeStats = timeStatsResponse.as(TimeStatsResponse.class);
+		assertEquals(7200, timeStats.timeEstimate());
+		assertEquals(1800, timeStats.totalTimeSpent());
+
+		// Reset spent time
+		Response resetResponse = issueService.resetSpentTime(iid);
+		assertEquals(200, resetResponse.statusCode(), "Resetting spent time failed");
+		TimeStatsResponse resetStats = resetResponse.as(TimeStatsResponse.class);
+		assertEquals(0, resetStats.totalTimeSpent());
+
+		// Verify values are actually persisted
+		Response finalStatsResponse = issueService.getTimeStats(iid);
+		assertEquals(200, finalStatsResponse.statusCode());
+		TimeStatsResponse finalStats = finalStatsResponse.as(TimeStatsResponse.class);
+		assertEquals(7200, finalStats.timeEstimate(), "Time estimate should remain unchanged");
+		assertEquals(0, finalStats.totalTimeSpent(), "Spent time should be reset to zero");
+	}
+
+	@Test
+	@DisplayName("Find an issue using a unique search marker")
+	void shouldFindIssueBySearchMarkers() {
+
+		String uniqueTitle = IssueTestData.uniqueTitle("TestFilter");
+		CreateIssueRequest issue = IssueTestData.issue(uniqueTitle, "Test Description");
+		Response createdissue = issueService.createIssue(issue);
+		IssueResponse createdIssue = IssueAssertions.assertSuccessfulIssueResponse(createdissue, 201);
+		cleanup.track(createdIssue.iid());
+		Response resultissues = issueService.listIssues(Map.of("Search", uniqueTitle));
+		List<IssueResponse> issues = Arrays.asList(resultissues.as(IssueResponse[].class));
+		IssueResponse matchedIssue = issues.stream().filter(i -> i.title().equals(uniqueTitle)).findFirst()
+				.orElseThrow();
+		assertEquals(createdIssue.iid(), matchedIssue.iid());
+
+		assertEquals(createdIssue.title(), matchedIssue.title());
 	}
 
 	private List<IssueResponse> getPage(String marker, int page) {

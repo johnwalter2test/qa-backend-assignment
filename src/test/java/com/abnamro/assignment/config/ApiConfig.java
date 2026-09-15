@@ -1,9 +1,16 @@
 package com.abnamro.assignment.config;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
+
 /** Holds API configuration. */
 public final class ApiConfig {
 
 	private static final String DEFAULT_BASE_URL = "https://gitlab.com/api/v4";
+    private static final Properties LOCAL_SETTINGS = loadLocalSettings();
 
 	private ApiConfig() {
 		// Utility class - prevent instantiation
@@ -44,13 +51,30 @@ public final class ApiConfig {
 		return value == null || value.isBlank() ? defaultValue : value.trim();
 	}
 
-	private static String resolve(String systemProperty, String environmentVariable) {
+	    private static Properties loadLocalSettings() {
+        Properties settings = new Properties();
+        Path path = Path.of("gitlab.local.properties");
+        if (Files.notExists(path)) {
+            return settings;
+        }
+        try (Reader reader = Files.newBufferedReader(path)) {
+            settings.load(reader);
+        } catch (IOException e) {
+            throw new IllegalStateException("Cannot read gitlab.local.properties", e);
+        }
+        return settings;
+    }
+    private static String resolve(String systemProperty, String environmentVariable) {
 
 		String systemValue = System.getProperty(systemProperty);
 		if (systemValue != null && !systemValue.isBlank()) {
 			return systemValue;
 		}
 
-		return System.getenv(environmentVariable);
+		String localValue = LOCAL_SETTINGS.getProperty(systemProperty);
+        if (localValue != null && !localValue.isBlank()) {
+            return localValue;
+        }
+        return System.getenv(environmentVariable);
 	}
 }

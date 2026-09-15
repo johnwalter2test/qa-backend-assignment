@@ -7,9 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record UpdateIssueRequest(
 
-		String title,
-		String description,
-		@JsonProperty("state_event") String stateEvent,
+		String title, String description, @JsonProperty("state_event") String stateEvent,
 		@JsonProperty("add_labels") String addLabels
 
 ) {
@@ -31,7 +29,10 @@ public record UpdateIssueRequest(
 	}
 
 	public static UpdateIssueRequest titleAndDescription(String title, String description) {
-
 		return new UpdateIssueRequest(title, description, null, null);
+	}
+
+	public static UpdateIssueRequest empty() {
+		return new UpdateIssueRequest(null, null, null, null);
 	}
 }

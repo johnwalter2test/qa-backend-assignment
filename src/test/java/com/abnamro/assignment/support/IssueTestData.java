@@ -1,5 +1,6 @@
 package com.abnamro.assignment.support;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.abnamro.assignment.model.CreateIssueRequest;
@@ -22,6 +23,18 @@ public final class IssueTestData {
 	public static CreateIssueRequest issue(String title, String description) {
 
 		return new CreateIssueRequest(title, description);
+	}
+
+	public static CreateIssueRequest fullFieldIssue() {
+
+		return CreateIssueRequest.withOptionalFields(uniqueTitle("FULL-FIELDS"), uniqueDescription("FULL-FIELDS"),
+				"automation,api,coverage", true, LocalDate.now().plusDays(30).toString(), "issue");
+	}
+
+	public static CreateIssueRequest fullFieldIssue(String title, String description, String labels,
+			Boolean confidential, String dueDate, String issueType) {
+
+		return CreateIssueRequest.withOptionalFields(title, description, labels, confidential, dueDate, issueType);
 	}
 
 	public static String uniqueTitle(String scenario) {

@@ -39,3 +39,9 @@ target/
 # JVM crash logs
 hs_err_pid*
 replay_pid*
+
+# Local coding practice copy
+/practice-copy/
+
+# Local GitLab test credentials
+/gitlab.local.properties
