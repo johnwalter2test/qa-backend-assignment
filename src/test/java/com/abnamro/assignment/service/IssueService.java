@@ -35,14 +35,29 @@ public final class IssueService {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when().get(ISSUE_ENDPOINT);
 	}
 
-	// Updates an existing issue.
-
+	/**
+	 * Updates an existing issue.
+	 *
+	 * Sends a PUT to /projects/{projectId}/issues/{issueIid} with the supplied
+	 * {@link UpdateIssueRequest} body.
+	 *
+	 * @param issueIid project-level IID of the issue to update
+	 * @param request  update payload
+	 * @return Rest Assured {@code Response} from the server
+	 */
 	public Response updateIssue(long issueIid, UpdateIssueRequest request) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).body(request).when().put(ISSUE_ENDPOINT);
 	}
 
-	// Deletes an existing issue.
-
+	/**
+	 * Deletes an existing issue.
+	 *
+	 * Sends a DELETE to /projects/{projectId}/issues/{issueIid}. A successful
+	 * deletion usually returns HTTP 204.
+	 *
+	 * @param issueIid project-level IID of the issue to delete
+	 * @return Rest Assured {@code Response} from the server
+	 */
 	public Response deleteIssue(long issueIid) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when().delete(ISSUE_ENDPOINT);
 	}
@@ -62,37 +77,69 @@ public final class IssueService {
 		return request(specification).when().get(ISSUES_ENDPOINT);
 	}
 
+	/**
+	 * Creates an authenticated request specification.
+	 */
+
 	private RequestSpecification authenticatedRequest() {
 		return request(RequestSpecFactory.authenticated());
 	}
+
+	/**
+	 * Creates a request specification with the configured project ID.
+	 */
 
 	private RequestSpecification request(RequestSpecification specification) {
 		return given().spec(specification).pathParam("projectId", ApiConfig.projectId());
 	}
 
+	/**
+	 * Retrieves project issues using the supplied query parameters.
+	 */
+
 	public Response listIssues(Map<String, ?> queryParams) {
 		return authenticatedRequest().queryParams(queryParams).when().get(ISSUES_ENDPOINT);
 	}
+
+	/**
+	 * Retrieves the state transition events for an issue.
+	 */
 
 	public Response getIssueStateEvents(long issueIid) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when()
 				.get(ISSUE_ENDPOINT + "/resource_state_events");
 	}
 
+	/**
+	 * Sets the time estimate for an issue.
+	 */
+
 	public Response setTimeEstimate(long iid, String duration) {
 		return authenticatedRequest().pathParam("issueIid", iid).queryParam("duration", duration).when()
 				.post(ISSUES_ENDPOINT + "/{issueIid}/time_estimate");
 	}
+
+	/**
+	 * Adds spent time to an issue.
+	 */
 
 	public Response addSpentTime(long issueIid, String duration) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).queryParam("duration", duration).when()
 				.post(ISSUES_ENDPOINT + "/{issueIid}/add_spent_time");
 	}
 
+	/**
+	 * Resets the recorded spent time for an issue.
+	 */
+
 	public Response resetSpentTime(long issueIid) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when()
 				.post(ISSUES_ENDPOINT + "/{issueIid}/reset_spent_time");
 	}
+
+	/**
+	 * Retrieves the time-tracking statistics for an issue.
+	 */	
 
 	public Response getTimeStats(long issueIid) {
 		return authenticatedRequest().pathParam("issueIid", issueIid).when()

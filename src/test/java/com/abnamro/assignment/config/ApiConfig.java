@@ -16,11 +16,26 @@ public final class ApiConfig {
 		// Utility class - prevent instantiation
 	}
 
+	/**
+	 * Returns the configured GitLab API base URL. Values are resolved from JVM
+	 * system properties, local properties file (`gitlab.local.properties`) or
+	 * environment variables. The returned value always ends with `/api/v4`.
+	 *
+	 * @return base API URL
+	 */
 	public static String baseUrl() {
 		String baseUrl = getOptional("gitlab.base.url", "GITLAB_BASE_URL", DEFAULT_BASE_URL).replaceAll("/+$", "");
 		return baseUrl.endsWith("/api/v4") ? baseUrl : baseUrl + "/api/v4";
 	}
 
+	/**
+	 * Returns the configured numeric GitLab project ID. The value is required
+	 * and is read from system properties, local properties or environment
+	 * variables.
+	 *
+	 * @return numeric project ID
+	 * @throws IllegalStateException if the value is missing or not numeric
+	 */
 	public static long projectId() {
 		String value = getRequired("gitlab.project.id", "GITLAB_PROJECT_ID");
 
@@ -31,6 +46,12 @@ public final class ApiConfig {
 		}
 	}
 
+	/**
+	 * Returns the required GitLab API token used for Authorization headers.
+	 *
+	 * @return API token string
+	 * @throws IllegalStateException if the token is missing
+	 */
 	public static String token() {
 		return getRequired("gitlab.token", "GITLAB_TOKEN");
 	}

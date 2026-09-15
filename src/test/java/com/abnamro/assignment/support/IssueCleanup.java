@@ -15,6 +15,12 @@ public final class IssueCleanup {
 	private final IssueService issueService;
 	private final Set<Long> issueIids = new LinkedHashSet<>();
 
+	/**
+	 * Creates a cleanup helper that will delete tracked issues using the
+	 * provided {@link IssueService}.
+	 *
+	 * @param issueService service used to delete issues
+	 */
 	public IssueCleanup(IssueService issueService) {
 		this.issueService = issueService;
 	}
